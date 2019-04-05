@@ -43,6 +43,7 @@ steps:
   - run:
       name: Set up Git
       command: |
+        apt-get update && apt-get install -y git
         git config --global user.name "<<parameters.git_name>>"
         git config --global user.email "<<parameters.git_email>>"
   - run:
