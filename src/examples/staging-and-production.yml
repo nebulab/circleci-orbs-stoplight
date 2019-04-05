@@ -1,0 +1,96 @@
+description: >
+  Use the push and publish jobs to update and publish your staging documentation when a branch is
+  merged into master and deployed to staging, then update and publish your production project when
+  deploying to production.
+
+usage:
+  version: 2.1
+
+  orbs:
+    stoplight: nebulab/stoplight@2.0.0
+
+  workflows:
+    build-and-deploy:
+      jobs:
+        - tests
+        - deploy-staging:
+            requires:
+              - build
+        - stoplight/push:
+            name: push-stoplight-staging
+            project: your-stoplight-org/your-stoplight-project-staging
+            git_token: $STOPLIGHT_GIT_TOKEN
+            source_dir: stoplight
+            username: $STOPLIGHT_USERNAME
+            filters:
+              branches:
+                only: master
+            requires:
+              - deploy-staging
+        - stoplight/publish:
+            name: publish-stoplight-staging
+            api_token: $STOPLIGHT_API_TOKEN
+            domain: your-site-staging.docs.stoplight.io
+            requires:
+              - push-stoplight-staging
+            filters:
+              branches:
+                only: master
+        - approve-production:
+            type: approval
+            requires:
+              - build
+              - publish-stoplight-staging
+            filters:
+              branches:
+                only: master
+        - deploy-production:
+            requires:
+              - approve-production
+        - stoplight/push:
+            name: push-stoplight-production
+            project: your-stoplight-org/your-stoplight-project-production
+            git_token: $STOPLIGHT_GIT_TOKEN
+            source_dir: stoplight
+            username: $STOPLIGHT_USERNAME
+            filters:
+              branches:
+                only: master
+            requires:
+              - deploy-staging
+        - stoplight/publish:
+            name: publish-stoplight-production
+            api_token: $STOPLIGHT_API_TOKEN
+            domain: your-site-production.docs.stoplight.io
+            requires:
+              - push-stoplight-production
+            filters:
+              branches:
+                only: master
+
+  jobs:
+    tests:
+      docker:
+        - image: circleci/ruby
+      steps:
+        - checkout
+        - run:
+            name: Install bundle
+            command: bundle install
+        - run:
+            name: Run tests
+            command: bundle exec rspec
+    deploy-staging:
+      docker:
+        - image: circleci/ruby
+      steps:
+        - run:
+            name: Deploy to production
+            command: git push staging master
+    deploy-production:
+      docker:
+        - image: circleci/ruby
+      steps:
+        - run:
+            name: Deploy to production
+            command: git push production master
