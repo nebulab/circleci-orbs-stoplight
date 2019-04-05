@@ -41,9 +41,6 @@ steps:
   - checkout:
       path: source
   - run:
-      name: Install jq
-      command: sudo apt-get update && sudo apt-get install -y jq
-  - run:
       name: Set up Git
       command: |
         git config --global user.name "<<parameters.git_name>>"

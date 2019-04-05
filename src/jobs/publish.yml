@@ -15,6 +15,9 @@ parameters:
 
 steps:
   - run:
+      name: Install jq
+      command: apt-get update && apt-get install -y jq
+  - run:
       name: Publish Stoplight documentation
       command: |
         mkdir -p /tmp/stoplight
