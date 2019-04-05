@@ -15,8 +15,8 @@ parameters:
 
 steps:
   - run:
-      name: Install jq
-      command: apt-get update && apt-get install -y jq
+      name: Install cURL and jq
+      command: apt-get update && apt-get install -y curl jq
   - run:
       name: Publish Stoplight documentation
       command: |
@@ -25,5 +25,4 @@ steps:
           --url "https://next-api.stoplight.io/docs.release?domain=<<parameters.domain>>" \
           --header "Authorization: Bearer <<parameters.api_token>>" \
           > /tmp/stoplight/response.json 2>/dev/null
-        cat /tmp/stoplight/response.json
         [[ $(cat /tmp/stoplight/response.json | jq '.ok') = 'true' ]] || cat /tmp/stoplight/response.json
