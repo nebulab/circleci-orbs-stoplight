@@ -1,0 +1,42 @@
+description: >
+  Use the push and publish jobs to update and publish your API documentation when a branch is merged
+  into master and deployed.
+
+usage:
+  version: 2.1
+
+  orbs:
+    stoplight: nebulab/stoplight@2.0.0
+
+  workflows:
+    build:
+      jobs:
+        - tests:
+            steps:
+              - run:
+                  name: Run tests
+                  command: bundle exec rspec
+        - deploy:
+            steps:
+              - run:
+                  name: Deploy to production
+                  command: git push heroku master
+        - stoplight/push:
+            organization: your-stoplight-org
+            project: your-stoplight-project
+            git_token: $STOPLIGHT_GIT_TOKEN
+            source_dir: stoplight-contents-dir
+            username: $STOPLIGHT_USERNAME
+            filters:
+              branches:
+                only: master
+            reuqires:
+              - deploy
+        - stoplight/publish:
+            api_token: $STOPLIGHT_API_TOKEN
+            domain: your-site.docs.stoplight.io
+            requires:
+              - stoplight/push
+            filters:
+              branches:
+                only: master

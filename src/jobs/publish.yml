@@ -1,0 +1,25 @@
+description: >
+  Publishes a new build for your Stoplight project.
+
+executor: default
+
+parameters:
+  domain:
+    type: string
+    description: >
+      The Stoplight domain you want to publish.
+  api_token:
+    type: string
+    description: >
+      Your Stoplight API token (you can get one at next.stoplight.io).
+
+steps:
+  - run:
+      name: Publish Stoplight documentation
+      command: |
+        mkdir -p /tmp/stoplight
+        curl --request POST \
+          --url "https://next-api.stoplight.io/docs.release?domain=<<parameters.domain>>" \
+          --header "Authorization: Bearer <<parameters.api_token>>" \
+          > /tmp/stoplight/response.json 2>/dev/null
+        [[ $(cat /tmp/stoplight/response.json | jq '.ok') = 'true' ]]
