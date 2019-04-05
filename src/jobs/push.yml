@@ -38,16 +38,14 @@ parameters:
 executor: default
 
 steps:
-  - checkout:
-      path: source
-  - run:
-      name: Install jq
-      command: sudo apt-get update && sudo apt-get install -y jq
   - run:
       name: Set up Git
       command: |
+        apt-get update && apt-get install -y git
         git config --global user.name "<<parameters.git_name>>"
         git config --global user.email "<<parameters.git_email>>"
+  - checkout:
+      path: source
   - run:
       name: Clone Stoplight repo
       command: |
