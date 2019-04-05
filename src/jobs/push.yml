@@ -1,0 +1,67 @@
+description: >
+  Pushes the contents of a directory in your Git repository to your Stoplight project's Git
+  repository, maintaining Git history.
+
+parameters:
+  project:
+    type: string
+    description: >
+      The name of your Stoplight project, including the user/organization (e.g. acme/todos-api).
+  username:
+    type: string
+    description: >
+      The Stoplight user which will be used to push to the Git repository.
+  git_token:
+    type: string
+    description: >
+      Your Stoplight Git token (you can get one at next.stoplight.io).
+  source_dir:
+    type: string
+    description: >
+      The name of the directory in your project that contains your Stoplight documentation.
+  version:
+    type: string
+    default: "1.0"
+    description: >
+      The version of your API documentation you want to update.
+  git_name:
+    type: string
+    default: deployer
+    description: >
+      The name that will appear in the Git commit.
+  git_email:
+    type: string
+    default: deployer@example.com
+    description: >
+      The email address that will appear in the Git commit.
+
+executor: default
+
+steps:
+  - checkout:
+      path: source
+  - run:
+      name: Install jq
+      command: sudo apt-get update && sudo apt-get install -y jq
+  - run:
+      name: Set up Git
+      command: |
+        git config --global user.name "<<parameters.git_name>>"
+        git config --global user.email "<<parameters.git_email>>"
+  - run:
+      name: Clone Stoplight repo
+      command: |
+        export STOPLIGHT_REPO_URL=https://<<parameters.username>>:<<parameters.git_token>>@git.stoplight.io/<<parameters.project>>.git
+        export STOPLIGHT_REPO_BRANCH=version/<<parameters.version>>
+        git clone $STOPLIGHT_REPO_URL stoplight
+        cd stoplight
+        git checkout $STOPLIGHT_REPO_BRANCH
+  - run:
+      name: Update Stoplight documentation
+      working_directory: stoplight
+      command: |
+        find . -path ./.git -prune -o -exec rm -rf {} \; 2> /dev/null
+        cp -r ../source/<<parameters.source_dir>>/* .
+        git add .
+        git diff-index --quiet HEAD || git commit -m "Update API docs with $CIRCLE_SHA1"
+        git push origin $STOPLIGHT_REPO_BRANCH

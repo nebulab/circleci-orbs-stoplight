@@ -1,0 +1,87 @@
+version: 2.1
+
+orbs:
+  orb-tools: circleci/orb-tools@7.0.0
+
+workflows:
+  lint_pack-validate_publish-dev:
+    jobs:
+      # this `lint-pack_validate_publish-dev` workflow will run on any commit
+      - orb-tools/lint
+
+      # pack your orb YAML files to a single orb.yml
+      # validate the orb.yml file to ensure it is well-formed
+      - orb-tools/pack:
+          requires:
+            - orb-tools/lint
+
+      # release dev version of orb, for testing & possible publishing
+      # requires a CircleCI API token to be stored as CIRCLE_TOKEN (default)
+      # https://circleci.com/docs/2.0/managing-api-tokens
+      # store CIRCLE_TOKEN as a project env var or Contexts resource
+      # if using Contexts, add your context below
+      - orb-tools/publish-dev:
+          orb-name: nebulab/stoplight
+          requires:
+            - orb-tools/pack
+
+      # trigger an integration workflow to test the dev version of your orb
+      # an SSH key must be stored in your orb's repository and in CircleCI
+      # (add the public key as a read/write key on GitHub; add the private
+      # key in CircleCI via SSH Permissions, with github.com as Hostname)
+      - orb-tools/trigger-integration-workflow:
+          name: trigger-integration-dev
+          ssh-fingerprints: f4:ee:02:2e:42:86:c3:8e:8a:b2:d4:2d:ed:41:ee:e4
+          requires:
+            - orb-tools/publish-dev
+          filters:
+            branches:
+              ignore: master
+
+      # by default, the 1st job (above) will trigger only integration tests;
+      # the 2nd job (below) may also publish a production orb version
+      - orb-tools/trigger-integration-workflow:
+          name: trigger-integration-master
+          ssh-fingerprints: f4:ee:02:2e:42:86:c3:8e:8a:b2:d4:2d:ed:41:ee:e4
+          tag: master
+          requires:
+            - orb-tools/publish-dev
+          filters:
+            branches:
+              only: master
+
+  # this `integration-tests_prod-release` workflow will ignore commits
+  # it is only triggered by git tags, which are created in the job above
+  integration-tests_prod-release:
+    jobs:
+      # patch, minor, or major publishing, depending on which orb source
+      # files have been modified (that logic lives in the
+      # trigger-integration-workflow job's source)
+      - orb-tools/dev-promote-prod:
+          name: dev-promote-patch
+          orb-name: nebulab/stoplight
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /master-patch.*/
+
+      - orb-tools/dev-promote-prod:
+          name: dev-promote-minor
+          release: minor
+          orb-name: nebulab/stoplight
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /master-minor.*/
+
+      - orb-tools/dev-promote-prod:
+          name: dev-promote-major
+          release: major
+          orb-name: nebulab/stoplight
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /master-major.*/
