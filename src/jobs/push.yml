@@ -23,7 +23,8 @@ parameters:
     type: string
     default: "1.0"
     description: >
-      The version of your API documentation you want to update.
+      The version of your API documentation you want to update. You can use backticks to execute
+      Bash commands (for instance to read from a file).
   git_name:
     type: string
     default: deployer
@@ -38,6 +39,8 @@ parameters:
 executor: default
 
 steps:
+  - attach_workspace:
+      at: /tmp/workspace
   - run:
       name: Set up Git
       command: |
