@@ -42,9 +42,9 @@ steps:
   - attach_workspace:
       at: /tmp/workspace
   - run:
-      name: Set up Git
+      name: Set up SSL and Git
       command: |
-        apt-get update && apt-get install -y git
+        apt-get update && apt-get install -y git ca-certificates
         git config --global user.name "<<parameters.git_name>>"
         git config --global user.email "<<parameters.git_email>>"
   - checkout:
